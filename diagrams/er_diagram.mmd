@@ -1,0 +1,114 @@
+erDiagram
+    ROLES ||--o{ USERS : has
+    USERS ||--o{ VEHICLES : owns
+    USERS ||--o{ SERVICE_REQUESTS : creates
+    USERS ||--o{ MECHANIC_LOCATIONS : works_at
+    SERVICE_LOCATIONS ||--o{ MECHANIC_LOCATIONS : hosts
+    SERVICE_LOCATIONS ||--o{ SERVICE_REQUESTS : serves
+    SERVICE_TYPES ||--o{ SERVICE_REQUESTS : typed_as
+    SERVICE_TYPES ||--o{ SERVICE_TYPE_PARTS : includes
+    PARTS ||--o{ SERVICE_TYPE_PARTS : used_in
+    PARTS ||--o{ PART_COMPATIBILITIES : compatible_with
+    PARTS ||--o{ REQUEST_PARTS : listed_in
+    PARTS ||--o{ PART_PURCHASE_REQUESTS : requested
+    REQUEST_STATUSES ||--o{ SERVICE_REQUESTS : current
+    SERVICE_REQUESTS ||--o{ REQUEST_PARTS : contains
+    SERVICE_REQUESTS ||--o{ PART_PURCHASE_REQUESTS : needs
+    SERVICE_REQUESTS ||--o| WORK_REPORTS : results_in
+    SERVICE_REQUESTS ||--o{ REQUEST_STATUS_HISTORY : audited_by
+    PART_PURCHASE_REQUESTS ||--o| PURCHASE_APPROVALS : decided_by
+
+    ROLES {
+        smallint id PK
+        varchar code UK
+        varchar name_ru
+    }
+    USERS {
+        bigint id PK
+        varchar email UK
+        varchar password_hash
+        varchar full_name
+        smallint role_id FK
+    }
+    VEHICLES {
+        bigint id PK
+        bigint owner_id FK
+        varchar make
+        varchar model
+        int year
+        varchar plate_number UK
+    }
+    SERVICE_LOCATIONS {
+        bigint id PK
+        varchar name
+        varchar address
+        boolean is_active
+    }
+    MECHANIC_LOCATIONS {
+        bigint mechanic_id PK_FK
+        bigint location_id PK_FK
+        boolean is_active
+    }
+    SERVICE_TYPES {
+        bigint id PK
+        varchar code UK
+        boolean is_modification
+        numeric base_price
+    }
+    PARTS {
+        bigint id PK
+        varchar sku UK
+        numeric approx_price
+        boolean is_orderable
+    }
+    PART_COMPATIBILITIES {
+        bigint id PK
+        bigint part_id FK
+        varchar make
+        varchar model
+    }
+    SERVICE_TYPE_PARTS {
+        bigint service_type_id PK_FK
+        bigint part_id PK_FK
+    }
+    REQUEST_STATUSES {
+        smallint id PK
+        varchar code UK
+        boolean is_terminal
+    }
+    SERVICE_REQUESTS {
+        bigint id PK
+        bigint client_id FK
+        bigint vehicle_id FK
+        bigint location_id FK
+        bigint mechanic_id FK
+        smallint status_id FK
+        varchar purchase_approval_mode
+    }
+    REQUEST_PARTS {
+        bigint id PK
+        bigint request_id FK
+        bigint part_id FK
+        int quantity
+    }
+    PART_PURCHASE_REQUESTS {
+        bigint id PK
+        bigint request_id FK
+        bigint part_id FK
+        varchar status
+    }
+    PURCHASE_APPROVALS {
+        bigint id PK
+        bigint purchase_request_id FK
+        varchar decision
+    }
+    WORK_REPORTS {
+        bigint id PK
+        bigint request_id FK
+        text result_summary
+    }
+    REQUEST_STATUS_HISTORY {
+        bigint id PK
+        bigint request_id FK
+        smallint to_status_id FK
+    }

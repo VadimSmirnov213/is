@@ -1,0 +1,31 @@
+digraph ER {
+  graph [rankdir=LR, bgcolor="white", fontname="DejaVu Sans", fontsize=11, pad=0.3];
+  node [shape=box, style="rounded,filled", fillcolor="#F5F7FA", fontname="DejaVu Sans", fontsize=10];
+  edge [fontname="DejaVu Sans", fontsize=8, color="#555555"];
+
+  roles; users; vehicles; service_locations; mechanic_locations;
+  service_types; parts; part_compatibilities; service_type_parts;
+  request_statuses; service_requests; request_parts;
+  part_purchase_requests; purchase_approvals; work_reports; request_status_history;
+
+  roles -> users [label="1:N"];
+  users -> vehicles [label="1:N owner"];
+  users -> mechanic_locations [label="M:N"];
+  service_locations -> mechanic_locations [label="M:N"];
+  users -> service_requests [label="1:N client"];
+  vehicles -> service_requests [label="1:N"];
+  service_types -> service_requests [label="1:N"];
+  service_locations -> service_requests [label="1:N"];
+  request_statuses -> service_requests [label="1:N"];
+  users -> service_requests [label="1:N mechanic", style=dashed];
+  service_types -> service_type_parts [label="M:N"];
+  parts -> service_type_parts [label="M:N"];
+  parts -> part_compatibilities [label="1:N / M:N"];
+  service_requests -> request_parts [label="1:N"];
+  parts -> request_parts [label="1:N"];
+  service_requests -> part_purchase_requests [label="1:N"];
+  parts -> part_purchase_requests [label="1:N"];
+  part_purchase_requests -> purchase_approvals [label="1:1"];
+  service_requests -> work_reports [label="1:1"];
+  service_requests -> request_status_history [label="1:N"];
+}

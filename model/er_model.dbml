@@ -1,0 +1,190 @@
+// ER-модель ИС автосервиса (код модели в нотации DBML)
+// ≥10 сущностей; M:N: mechanic_locations, part_compatibilities, service_type_parts
+
+Project autoservice {
+  database_type: 'PostgreSQL'
+  Note: 'Курсовая работа, этап 2'
+}
+
+Table roles {
+  id smallint [pk, increment]
+  code varchar(32) [unique, not null, note: 'CLIENT | MANAGER | MECHANIC']
+  name_ru varchar(64) [not null]
+}
+
+Table request_statuses {
+  id smallint [pk, increment]
+  code varchar(40) [unique, not null]
+  name_ru varchar(80) [not null]
+  is_terminal boolean [not null, default: false]
+}
+
+Table users {
+  id bigint [pk, increment]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  full_name varchar(150) [not null]
+  phone varchar(32)
+  role_id smallint [not null, ref: > roles.id]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table service_locations {
+  id bigint [pk, increment]
+  name varchar(150) [not null]
+  address varchar(255) [not null]
+  phone varchar(32)
+  work_schedule varchar(255)
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table mechanic_locations {
+  mechanic_id bigint [not null, ref: > users.id]
+  location_id bigint [not null, ref: > service_locations.id]
+  assigned_at timestamptz [not null, default: `now()`]
+  is_active boolean [not null, default: true]
+
+  indexes {
+    (mechanic_id, location_id) [pk]
+  }
+
+  Note: 'M:N механики ↔ точки обслуживания'
+}
+
+Table vehicles {
+  id bigint [pk, increment]
+  owner_id bigint [not null, ref: > users.id]
+  make varchar(80) [not null]
+  model varchar(80) [not null]
+  year int [not null]
+  plate_number varchar(20) [unique, not null]
+  vin varchar(32) [unique]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table service_types {
+  id bigint [pk, increment]
+  code varchar(64) [unique, not null]
+  name varchar(150) [not null]
+  description text
+  category varchar(64) [not null]
+  base_price numeric(12,2) [not null, default: 0]
+  is_modification boolean [not null, default: false]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table parts {
+  id bigint [pk, increment]
+  sku varchar(64) [unique, not null]
+  name varchar(200) [not null]
+  description text
+  approx_price numeric(12,2) [not null]
+  is_orderable boolean [not null, default: true]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table part_compatibilities {
+  id bigint [pk, increment]
+  part_id bigint [not null, ref: > parts.id]
+  make varchar(80) [not null]
+  model varchar(80) [not null]
+  year_from int
+  year_to int
+
+  Note: 'M:N запчасти ↔ марки/модели автомобилей'
+}
+
+Table service_type_parts {
+  service_type_id bigint [not null, ref: > service_types.id]
+  part_id bigint [not null, ref: > parts.id]
+  is_required boolean [not null, default: false]
+
+  indexes {
+    (service_type_id, part_id) [pk]
+  }
+
+  Note: 'M:N услуги модификации ↔ запчасти'
+}
+
+Table service_requests {
+  id bigint [pk, increment]
+  client_id bigint [not null, ref: > users.id]
+  vehicle_id bigint [not null, ref: > vehicles.id]
+  service_type_id bigint [not null, ref: > service_types.id]
+  location_id bigint [not null, ref: > service_locations.id]
+  mechanic_id bigint [ref: > users.id]
+  status_id smallint [not null, ref: > request_statuses.id]
+  description text [not null]
+  desired_date date [not null]
+  agreed_date date
+  purchase_approval_mode varchar(40) [not null]
+  cancel_reason text
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  completed_at timestamptz
+}
+
+Table request_parts {
+  id bigint [pk, increment]
+  request_id bigint [not null, ref: > service_requests.id]
+  part_id bigint [not null, ref: > parts.id]
+  quantity int [not null, default: 1]
+  unit_price numeric(12,2) [not null]
+  source varchar(32) [not null]
+  is_installed boolean [not null, default: false]
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table part_purchase_requests {
+  id bigint [pk, increment]
+  request_id bigint [not null, ref: > service_requests.id]
+  part_id bigint [not null, ref: > parts.id]
+  created_by bigint [not null, ref: > users.id]
+  quantity int [not null, default: 1]
+  reason text [not null]
+  estimated_cost numeric(12,2) [not null]
+  status varchar(32) [not null, default: 'PENDING']
+  purchased_at timestamptz
+  received_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table purchase_approvals {
+  id bigint [pk, increment]
+  purchase_request_id bigint [unique, not null, ref: > part_purchase_requests.id]
+  decided_by bigint [ref: > users.id]
+  decision varchar(16) [not null]
+  comment text
+  decided_at timestamptz [not null, default: `now()`]
+}
+
+Table work_reports {
+  id bigint [pk, increment]
+  request_id bigint [unique, not null, ref: > service_requests.id]
+  mechanic_id bigint [not null, ref: > users.id]
+  diagnosis text
+  work_description text [not null]
+  result_summary text [not null]
+  labor_cost numeric(12,2) [not null, default: 0]
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table request_status_history {
+  id bigint [pk, increment]
+  request_id bigint [not null, ref: > service_requests.id]
+  from_status_id smallint [ref: > request_statuses.id]
+  to_status_id smallint [not null, ref: > request_statuses.id]
+  changed_by bigint [ref: > users.id]
+  comment text
+  changed_at timestamptz [not null, default: `now()`]
+}
